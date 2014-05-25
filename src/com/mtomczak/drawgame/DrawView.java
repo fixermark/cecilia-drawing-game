@@ -35,8 +35,10 @@ import android.util.AttributeSet;
 import android.util.Log;
 
 import java.lang.StringBuilder;
+import java.util.Date;
 import java.util.Enumeration;
 import java.util.Formatter;
+import java.util.Random;
 import java.util.Vector;
 
 public class DrawView extends View
@@ -45,14 +47,31 @@ public class DrawView extends View
   private Canvas painting_canvas_;
   private Bitmap painting_bitmap_;
   private Path active_path_;
-  private RandomSound squeak_sounds_ = null;
+  private RandomSound squeakSounds_ = null;
+  private RandomSound shakeSounds_ = null;
+  private OscillationSensor oscillator_ = null;
+  private Random randomSource_ = null;
+
+  private long lastShakeTimestamp_ = 0;
 
   public DrawView(Context context, AttributeSet attrs) {
     super(context, attrs);
   }
 
   public void setSqueakSounds(RandomSound sound_source) {
-    squeak_sounds_ = sound_source;
+    squeakSounds_ = sound_source;
+  }
+
+  public void setShakeSounds(RandomSound sound_source) {
+    shakeSounds_ = sound_source;
+  }
+
+  public void setShakeSensor(OscillationSensor oscillator) {
+    oscillator_ = oscillator;
+  }
+
+  public void setRandomSource(Random random) {
+    randomSource_ = random;
   }
 
   @Override
@@ -60,6 +79,33 @@ public class DrawView extends View
     super.onDraw(canvas);
 
     canvas.drawBitmap(painting_bitmap_, new Matrix(), null);
+
+    // Check status of shake.
+    if (oscillator_ != null) {
+      Date d = new Date();
+
+      if (d.getTime() - oscillator_.getLastOscillationTimestamp() <= 500) {
+	shakeSounds_.play();
+	eraseOneBlot();
+      } else {
+	shakeSounds_.pause();
+      }
+    }
+  }
+
+  /** @brief Erases one blot of the image
+   */
+  void eraseOneBlot() {
+    int x = randomSource_.nextInt(painting_canvas_.getWidth());
+    int y = randomSource_.nextInt(painting_canvas_.getHeight());
+    int blotWidth = randomSource_.nextInt(painting_canvas_.getWidth() / 2) +
+      (painting_canvas_.getWidth() / 4);
+
+      Paint erasePaint = new Paint();
+      erasePaint.setColor(Color.WHITE);
+      erasePaint.setStyle(Paint.Style.STROKE);
+      erasePaint.setStrokeWidth((float)blotWidth);
+      painting_canvas_.drawPoint((float)x, (float)y, erasePaint);
   }
 
   @Override
@@ -91,15 +137,15 @@ public class DrawView extends View
     switch(event.getAction()) {
     case MotionEvent.ACTION_UP:
       active_path_ = null;
-      if (squeak_sounds_ != null) {
-	squeak_sounds_.pause();
+      if (squeakSounds_ != null) {
+	squeakSounds_.pause();
       }
       break;
     case MotionEvent.ACTION_DOWN:
       active_path_ = new Path();
       active_path_.moveTo(event.getX(), event.getY());
-      if (squeak_sounds_ != null) {
-	squeak_sounds_.play();
+      if (squeakSounds_ != null) {
+	squeakSounds_.play();
       }
       break;
     case MotionEvent.ACTION_MOVE:

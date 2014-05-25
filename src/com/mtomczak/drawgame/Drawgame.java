@@ -17,11 +17,15 @@ Copyright 2012 Mark T. Tomczak
 package com.mtomczak.drawgame;
 
 import android.app.Activity;
+import android.hardware.SensorManager;
 import android.os.Bundle;
 
 import com.mtomczak.drawgame.DrawView;
+import com.mtomczak.drawgame.OscillationSensor;
 import com.mtomczak.drawgame.RandomSound;
 
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.Random;
 
 public class Drawgame extends Activity {
@@ -34,18 +38,68 @@ public class Drawgame extends Activity {
     R.raw.squeak6
   };
 
+  public static final int SHAKE_SOUNDS[] = {
+    R.raw.shaka1,
+    R.raw.shaka2,
+    R.raw.shaka3,
+    R.raw.shaka4,
+    R.raw.shaka5,
+    R.raw.shaka6,
+    R.raw.shaka7,
+    R.raw.shaka8,
+    R.raw.shaka9
+  };
+
+  private OscillationSensor oscillator_;
+
 
   /** Called when the activity is first created. */
   @Override
     public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     RandomSound squeaks = new RandomSound(
-					  getApplicationContext(),
-					  new Random(),
-					  SQUEAK_SOUNDS);
+      getApplicationContext(),
+      new Random(),
+      SQUEAK_SOUNDS);
+    RandomSound shakes = new RandomSound(
+      getApplicationContext(),
+      new Random(),
+      SHAKE_SOUNDS);
+
     setContentView(R.layout.main);
-    DrawView drawView = (DrawView)findViewById(R.id.drawview);
+    final DrawView drawView = (DrawView)findViewById(R.id.drawview);
+    oscillator_ = new OscillationSensor(
+      (SensorManager)getSystemService(SENSOR_SERVICE),
+      5.0f,
+      0 /* x-axis */);
+
     drawView.setSqueakSounds(squeaks);
+    drawView.setShakeSounds(shakes);
+    drawView.setShakeSensor(oscillator_);
+    drawView.setRandomSource(new Random());
     drawView.setOnTouchListener(drawView);
+
+    // We need to touch the render thread at least 20 fps, to detect shake
+    // events.
+    ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(1);
+    executor.scheduleAtFixedRate(
+      new Runnable() {
+	@Override
+	  public void run() {
+	  drawView.postInvalidate();
+	}
+      }, 0, 1000/20, TimeUnit.MILLISECONDS);
+  }
+
+  @Override
+    protected void onPause() {
+    oscillator_.onPause();
+    super.onPause();
+  }
+
+  @Override
+    protected void onResume() {
+    oscillator_.onResume();
+    super.onResume();
   }
 }

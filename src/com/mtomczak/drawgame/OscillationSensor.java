@@ -16,27 +16,111 @@ Copyright 2014 Mark T. Tomczak
 
 package com.mtomczak.drawgame;
 
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorManager;
+import android.hardware.SensorEventListener;
+import java.util.Date;
+
 /**
  * Given an accelerometer, monitors the sensor for oscillatory behavior.
  *
- * The oscillator reports the last time it detected an oscillation (defined as)
+ * The oscillator reports the last time it detected an oscillation (defined as
  * a transition from one direction to another where a given oscillation was over
- * a threshold value (defined at construction time).
+ * a threshold value). The threshold value is defined at construction time.
  *
- *	   +---+   +---+
+ *	   A---+   A---+
  *         |   |   |   |
- * ----+   |   |   |   |   +---
+ * ----+   |   |   |   |   A---
  *     |   |   |   |   |   |
- *     +---+   +---+   +---+
+ *     A---+   A---+   A---+
+ *
+ * ... Each point marked 'A' in the above graph indicates an oscillation event
+ * report.
  */
+public class OscillationSensor implements SensorEventListener {
+  private float oscillationThreshold_ = 0.0f;
+  private final SensorManager sensorManager_;
+  private final Sensor accelerometer_;
+  private final int axisOfInterest_;
 
-//   public class OscillationSensor implements SensorEventListener {
-//   private float oscillation_threshold_ = 0.0f;
+  /** Either 1, -1, or 0. */
+  private int lastOscillationDirection_ = 0;
 
-//   public OscillationSensor(float oscillation_threshold) {
-//     oscillation_threshold_ = oscillation_threshold;
-//     // TODO(mtomczak): Connect to accelerometer.
-//   }
+  /** Last timestamp of an oscillation event in milliseconds. */
+  private long lastTimestampMillis_ = 0;
 
+  /** Reference points to convert timestamp into datetime offset. */
+  private long dateBase_ = 0;
+  private long timestampBase_ = 0;
 
-// }
+  /** @brief Constructor.
+   *
+   * @param manager Sensor manager that controls the sensor of interest.
+   * @param oscillationThreshold Threshold value, in m/s^2, that can trigger an
+   * oscillation event.
+   * @param axisOfInterest Axis to monitor with this oscillation sensor.
+   */
+
+  public OscillationSensor(
+    SensorManager manager,
+    float oscillationThreshold,
+    int axisOfInterest) {
+    sensorManager_ = manager;
+    oscillationThreshold_ = oscillationThreshold;
+    axisOfInterest_ = axisOfInterest;
+
+    accelerometer_ = sensorManager_.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+    if (accelerometer_ == null) {
+      throw new Error("Game requires accelerometer, but no accelerometer is " +
+		      "present on this hardware.");
+    }
+  }
+
+  public void onPause() {
+    sensorManager_.unregisterListener(this);
+  }
+
+  public void onResume() {
+    sensorManager_.registerListener(this, accelerometer_,
+				     SensorManager.SENSOR_DELAY_NORMAL);
+  }
+
+  @Override
+    public void onSensorChanged(SensorEvent event) {
+    if (dateBase_ == 0) {
+      logDateBase(event.timestamp);
+    }
+
+    float value = event.values[axisOfInterest_];
+
+    if (Math.abs(value) > oscillationThreshold_ && (
+	  (value < 0.0f && lastOscillationDirection_ >= 0) ||
+	  (value > 0.0f && lastOscillationDirection_ <= 0))) {
+      lastTimestampMillis_ = (event.timestamp - timestampBase_) / 1000000L + dateBase_;
+      if (value > 0.0f) {
+	lastOscillationDirection_ = 1;
+      } else {
+	lastOscillationDirection_ = -1;
+      }
+    }
+  }
+
+  @Override
+    public void onAccuracyChanged(Sensor sensor, int accuary) {
+    /* ignored */
+  }
+
+  private void logDateBase(long timestampNanos) {
+    dateBase_ = (new Date()).getTime();
+    timestampBase_ = timestampNanos;
+  }
+
+  /** Get the last oscillation timestamp
+   *
+   * @return The last oscillation timestamp (in milliseconds), or 0 if none have been detected.
+   */
+  long getLastOscillationTimestamp() {
+    return lastTimestampMillis_;
+  }
+}
