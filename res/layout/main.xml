@@ -15,7 +15,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
   -->
-<com.mtomczak.drawgame.Drawview xmlns:android="http://schemas.android.com/apk/res/android"
+<com.mtomczak.drawgame.DrawView xmlns:android="http://schemas.android.com/apk/res/android"
 				android:id="@+id/drawview"
 				android:focusable="false"
 				android:focusableInTouchMode="false"

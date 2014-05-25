@@ -39,15 +39,20 @@ import java.util.Enumeration;
 import java.util.Formatter;
 import java.util.Vector;
 
-public class Drawview extends View
+public class DrawView extends View
   implements View.OnTouchListener {
 
   private Canvas painting_canvas_;
   private Bitmap painting_bitmap_;
   private Path active_path_;
+  private RandomSound squeak_sounds_ = null;
 
-  public Drawview(Context context, AttributeSet attrs) {
+  public DrawView(Context context, AttributeSet attrs) {
     super(context, attrs);
+  }
+
+  public void setSqueakSounds(RandomSound sound_source) {
+    squeak_sounds_ = sound_source;
   }
 
   @Override
@@ -64,17 +69,6 @@ public class Drawview extends View
 
     painting_bitmap_ = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
     painting_canvas_ = new Canvas(painting_bitmap_);
-
-    Paint text_paint = new Paint();
-    text_paint.setTypeface(Typeface.defaultFromStyle(Typeface.BOLD));
-    text_paint.setTextAlign(Paint.Align.CENTER);
-    text_paint.setTextSize(24);
-    text_paint.setColor(Color.RED);
-    text_paint.setStyle(Paint.Style.FILL);
-    painting_canvas_.drawText("Hello, world!",
-                    ((float)getWidth()) / 2.0f,
-                    (float)getHeight() / 2.0f + 24.0f,
-                    text_paint);
 
     super.onMeasure(width, height);
   }
@@ -97,10 +91,16 @@ public class Drawview extends View
     switch(event.getAction()) {
     case MotionEvent.ACTION_UP:
       active_path_ = null;
+      if (squeak_sounds_ != null) {
+	squeak_sounds_.pause();
+      }
       break;
     case MotionEvent.ACTION_DOWN:
       active_path_ = new Path();
       active_path_.moveTo(event.getX(), event.getY());
+      if (squeak_sounds_ != null) {
+	squeak_sounds_.play();
+      }
       break;
     case MotionEvent.ACTION_MOVE:
       active_path_.lineTo(event.getX(), event.getY());
