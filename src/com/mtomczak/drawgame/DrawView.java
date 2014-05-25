@@ -49,7 +49,9 @@ public class DrawView extends View
   private Path active_path_;
   private RandomSound squeakSounds_ = null;
   private RandomSound shakeSounds_ = null;
-  private OscillationSensor oscillator_ = null;
+  private OscillationSensor oscillatorX_ = null;
+  private OscillationSensor oscillatorY_ = null;
+  private FaceDownSensor facedown_ = null;
   private Random randomSource_ = null;
 
   private long lastShakeTimestamp_ = 0;
@@ -66,8 +68,15 @@ public class DrawView extends View
     shakeSounds_ = sound_source;
   }
 
-  public void setShakeSensor(OscillationSensor oscillator) {
-    oscillator_ = oscillator;
+  public void setShakeSensors(
+    OscillationSensor oscillatorX,
+    OscillationSensor oscillatorY) {
+    oscillatorX_ = oscillatorX;
+    oscillatorY_ = oscillatorY;
+  }
+
+  public void setFaceDownSensor(FaceDownSensor facedown) {
+    facedown_ = facedown;
   }
 
   public void setRandomSource(Random random) {
@@ -81,10 +90,12 @@ public class DrawView extends View
     canvas.drawBitmap(painting_bitmap_, new Matrix(), null);
 
     // Check status of shake.
-    if (oscillator_ != null) {
+    if (oscillatorX_ != null) {
       Date d = new Date();
 
-      if (d.getTime() - oscillator_.getLastOscillationTimestamp() <= 500) {
+      if (facedown_.isFacedown() &&
+	  (d.getTime() - oscillatorX_.getLastOscillationTimestamp() <= 500 ||
+	   d.getTime() - oscillatorY_.getLastOscillationTimestamp() <= 500)) {
 	shakeSounds_.play();
 	eraseOneBlot();
       } else {

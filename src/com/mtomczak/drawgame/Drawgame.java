@@ -22,6 +22,7 @@ import android.os.Bundle;
 
 import com.mtomczak.drawgame.DrawView;
 import com.mtomczak.drawgame.OscillationSensor;
+import com.mtomczak.drawgame.FaceDownSensor;
 import com.mtomczak.drawgame.RandomSound;
 
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -50,8 +51,9 @@ public class Drawgame extends Activity {
     R.raw.shaka9
   };
 
-  private OscillationSensor oscillator_;
-
+  private OscillationSensor oscillatorX_;
+  private OscillationSensor oscillatorY_;
+  private FaceDownSensor facedown_;
 
   /** Called when the activity is first created. */
   @Override
@@ -68,14 +70,21 @@ public class Drawgame extends Activity {
 
     setContentView(R.layout.main);
     final DrawView drawView = (DrawView)findViewById(R.id.drawview);
-    oscillator_ = new OscillationSensor(
+    oscillatorX_ = new OscillationSensor(
       (SensorManager)getSystemService(SENSOR_SERVICE),
       5.0f,
       0 /* x-axis */);
+    oscillatorY_ = new OscillationSensor(
+      (SensorManager)getSystemService(SENSOR_SERVICE),
+      5.0f,
+      1 /* y-axis */);
+    facedown_ = new FaceDownSensor(
+      (SensorManager)getSystemService(SENSOR_SERVICE));
 
     drawView.setSqueakSounds(squeaks);
     drawView.setShakeSounds(shakes);
-    drawView.setShakeSensor(oscillator_);
+    drawView.setShakeSensors(oscillatorX_, oscillatorY_);
+    drawView.setFaceDownSensor(facedown_);
     drawView.setRandomSource(new Random());
     drawView.setOnTouchListener(drawView);
 
@@ -93,13 +102,17 @@ public class Drawgame extends Activity {
 
   @Override
     protected void onPause() {
-    oscillator_.onPause();
+    oscillatorX_.onPause();
+    oscillatorY_.onPause();
+    facedown_.onPause();
     super.onPause();
   }
 
   @Override
     protected void onResume() {
-    oscillator_.onResume();
+    oscillatorX_.onResume();
+    oscillatorY_.onResume();
+    facedown_.onResume();
     super.onResume();
   }
 }
