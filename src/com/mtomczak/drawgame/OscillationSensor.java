@@ -50,10 +50,6 @@ public class OscillationSensor implements SensorEventListener {
   /** Last timestamp of an oscillation event in milliseconds. */
   private long lastTimestampMillis_ = 0;
 
-  /** Reference points to convert timestamp into datetime offset. */
-  private long dateBase_ = 0;
-  private long timestampBase_ = 0;
-
   /** @brief Constructor.
    *
    * @param manager Sensor manager that controls the sensor of interest.
@@ -88,16 +84,13 @@ public class OscillationSensor implements SensorEventListener {
 
   @Override
     public void onSensorChanged(SensorEvent event) {
-    if (dateBase_ == 0) {
-      logDateBase(event.timestamp);
-    }
 
     float value = event.values[axisOfInterest_];
 
     if (Math.abs(value) > oscillationThreshold_ && (
 	  (value < 0.0f && lastOscillationDirection_ >= 0) ||
 	  (value > 0.0f && lastOscillationDirection_ <= 0))) {
-      lastTimestampMillis_ = (event.timestamp - timestampBase_) / 1000000L + dateBase_;
+      lastTimestampMillis_ = (new Date()).getTime();
       if (value > 0.0f) {
 	lastOscillationDirection_ = 1;
       } else {
@@ -111,14 +104,10 @@ public class OscillationSensor implements SensorEventListener {
     /* ignored */
   }
 
-  private void logDateBase(long timestampNanos) {
-    dateBase_ = (new Date()).getTime();
-    timestampBase_ = timestampNanos;
-  }
-
   /** Get the last oscillation timestamp
    *
-   * @return The last oscillation timestamp (in milliseconds), or 0 if none have been detected.
+   * @return The last oscillation timestamp (in milliseconds), or 0 if none have
+   *     been detected.
    */
   long getLastOscillationTimestamp() {
     return lastTimestampMillis_;
