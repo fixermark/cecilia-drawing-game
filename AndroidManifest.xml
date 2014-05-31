@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
 	  package="com.mtomczak.drawgame"
-	  android:versionCode="6"
-	  android:versionName="1.04">
+	  android:versionCode="7"
+	  android:versionName="1.041">
   <uses-sdk android:minSdkVersion="4"
 	    android:targetSdkVersion="11"/>
   <uses-feature android:name="android.hardware.touchscreen"
@@ -12,7 +12,7 @@
   <application android:label="@string/app_name"
 	       android:icon="@drawable/icon"
                android:theme="@android:style/Theme.NoTitleBar">
-    <activity android:name="Drawtoy"
+    <activity android:name="Drawgame"
               android:label="@string/app_name"
               android:configChanges="orientation|keyboardHidden|screenSize"
               android:screenOrientation="portrait">
