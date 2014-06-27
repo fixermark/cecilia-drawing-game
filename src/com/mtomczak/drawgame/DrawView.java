@@ -62,9 +62,14 @@ public class DrawView extends View
   private static final int CRAYON_IMAGE_TOP_OFFSET = 100;
   private static final int CRAYON_UNSELECTED_INDENT = 15;
   private static final int CRAYON_COLORS[] = {
-    Color.rgb(255, 0, 0),
-    Color.rgb(0, 255, 0),
-    Color.rgb(0, 0, 255)
+    Color.RED,
+    Color.rgb(255, 102, 0),  // Orange
+    Color.YELLOW,
+    Color.GREEN,
+    Color.BLUE,
+    Color.rgb(57, 100, 195),  // Indigo
+    Color.rgb(102, 51, 153),  // RebeccaPurple ;)
+    Color.BLACK
   };
   private int selected_crayon_ = 0;
 
