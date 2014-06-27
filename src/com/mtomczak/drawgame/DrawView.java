@@ -34,6 +34,9 @@ import android.view.View;
 import android.util.AttributeSet;
 import android.util.Log;
 
+import com.larvalabs.svgandroid.SVGParser;
+import com.larvalabs.svgandroid.SVG;
+
 import java.lang.StringBuilder;
 import java.util.Date;
 import java.util.Enumeration;
@@ -56,8 +59,31 @@ public class DrawView extends View
 
   private long lastShakeTimestamp_ = 0;
 
+  private static final int CRAYON_IMAGE_TOP_OFFSET = 100;
+  private static final int CRAYON_UNSELECTED_INDENT = 15;
+  private static final int CRAYON_COLORS[] = {
+    Color.rgb(255, 0, 0),
+    Color.rgb(0, 255, 0),
+    Color.rgb(0, 0, 255)
+  };
+  private int selected_crayon_ = 0;
+
+  private Picture crayon_images_[];
+  private float crayon_gutter_ = 0;
+  private float crayon_height_ = 0;
+
   public DrawView(Context context, AttributeSet attrs) {
     super(context, attrs);
+    crayon_images_ = new Picture[CRAYON_COLORS.length];
+    for (int i = 0; i < CRAYON_COLORS.length; i++) {
+      crayon_images_[i] = SVGParser.getSVGFromResource(
+	getResources(),
+	R.raw.crayon,
+	Color.rgb(0,0,0),
+	CRAYON_COLORS[i]).getPicture();
+    }
+    crayon_gutter_ = crayon_images_[0].getWidth();
+    crayon_height_ = crayon_images_[0].getHeight();
   }
 
   public void setSqueakSounds(RandomSound sound_source) {
@@ -88,6 +114,14 @@ public class DrawView extends View
     super.onDraw(canvas);
 
     canvas.drawBitmap(painting_bitmap_, new Matrix(), null);
+    Paint gutterPaint = new Paint();
+    gutterPaint.setColor(Color.BLACK);
+    gutterPaint.setStyle(Paint.Style.STROKE);
+    gutterPaint.setStrokeWidth(2.0f);
+    canvas.drawLine(
+      crayon_gutter_, 0,
+      crayon_gutter_, canvas.getHeight(),
+      gutterPaint);
 
     // Check status of shake.
     if (oscillatorX_ != null) {
@@ -102,6 +136,7 @@ public class DrawView extends View
 	shakeSounds_.pause();
       }
     }
+    drawCrayons(canvas);
   }
 
   /** @brief Erases one blot of the image
@@ -117,6 +152,18 @@ public class DrawView extends View
       erasePaint.setStyle(Paint.Style.STROKE);
       erasePaint.setStrokeWidth((float)blotWidth);
       painting_canvas_.drawPoint((float)x, (float)y, erasePaint);
+  }
+
+  /** @brief Draws crayons
+   */
+  private void drawCrayons(Canvas canvas) {
+    canvas.translate(-CRAYON_UNSELECTED_INDENT, CRAYON_IMAGE_TOP_OFFSET);
+    for (int i = 0; i < crayon_images_.length; i++) {
+      int translate = (i == selected_crayon_) ? CRAYON_UNSELECTED_INDENT : 0;
+      canvas.translate(translate, 0);
+      crayon_images_[i].draw(canvas);
+      canvas.translate(-translate, crayon_images_[i].getHeight());
+    }
   }
 
   @Override
@@ -153,22 +200,41 @@ public class DrawView extends View
       }
       break;
     case MotionEvent.ACTION_DOWN:
-      active_path_ = new Path();
-      active_path_.moveTo(event.getX(), event.getY());
-      if (squeakSounds_ != null) {
-	squeakSounds_.play();
+      if (event.getX() <= crayon_gutter_) {
+	selectNewCrayon(event.getY());
+      } else {
+	active_path_ = new Path();
+	active_path_.moveTo(Math.max(event.getX(), crayon_gutter_), event.getY());
+	if (squeakSounds_ != null) {
+	  squeakSounds_.play();
+	}
       }
       break;
     case MotionEvent.ACTION_MOVE:
-      active_path_.lineTo(event.getX(), event.getY());
-      Paint path_paint = new Paint();
-      path_paint.setColor(Color.BLUE);
-      path_paint.setStyle(Paint.Style.STROKE);
-      path_paint.setStrokeWidth(8.0f);
-      painting_canvas_.drawPath(active_path_, path_paint);
-      invalidate();
+      if (active_path_ != null) {
+	active_path_.lineTo(Math.max(event.getX(), crayon_gutter_), event.getY());
+	Paint path_paint = new Paint();
+	path_paint.setColor(CRAYON_COLORS[selected_crayon_]);
+	path_paint.setStyle(Paint.Style.STROKE);
+	path_paint.setStrokeWidth(8.0f);
+	painting_canvas_.drawPath(active_path_, path_paint);
+	invalidate();
+      }
     }
 
     return true;
+  }
+
+  /** @brief Selects a new crayon
+   * @param yCoordinate y-coordinate of the selection event.
+   */
+
+  void selectNewCrayon(float yCoordinate) {
+    int selected_crayon = (int)((yCoordinate - CRAYON_IMAGE_TOP_OFFSET)
+				/ crayon_height_);
+    if (selected_crayon >= 0 && selected_crayon < CRAYON_COLORS.length) {
+      selected_crayon_ = selected_crayon;
+      invalidate();
+    }
   }
 }
