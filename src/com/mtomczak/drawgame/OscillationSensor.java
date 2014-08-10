@@ -37,11 +37,14 @@ import java.util.Date;
  *
  * ... Each point marked 'A' in the above graph indicates an oscillation event
  * report.
+ *
+ * Note: This sensor can work if the physical sensor does not exist (in which
+ * case, it never reports oscillation).
  */
 public class OscillationSensor implements SensorEventListener {
   private float oscillationThreshold_ = 0.0f;
   private final SensorManager sensorManager_;
-  private final Sensor accelerometer_;
+  private final Sensor accelerometer_ = null;
   private final int axisOfInterest_;
 
   /** Either 1, -1, or 0. */
@@ -67,19 +70,19 @@ public class OscillationSensor implements SensorEventListener {
     axisOfInterest_ = axisOfInterest;
 
     accelerometer_ = sensorManager_.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-    if (accelerometer_ == null) {
-      throw new Error("Game requires accelerometer, but no accelerometer is " +
-		      "present on this hardware.");
-    }
   }
 
   public void onPause() {
-    sensorManager_.unregisterListener(this);
+    if (accelerometer_ != null) {
+      sensorManager_.unregisterListener(this);
+    }
   }
 
   public void onResume() {
-    sensorManager_.registerListener(this, accelerometer_,
-				     SensorManager.SENSOR_DELAY_NORMAL);
+    if (accelerometer_ != null) {
+      sensorManager_.registerListener(this, accelerometer_,
+				      SensorManager.SENSOR_DELAY_NORMAL);
+    }
   }
 
   @Override

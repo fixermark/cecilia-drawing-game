@@ -24,10 +24,14 @@ import java.util.Date;
 
 /**
  * Monitors for the device being oriented face-down.
+ *
+ * Note: This sensor can work if the physical sensor does not exist (in which
+ * case, it simply always returns false).
  */
 public class FaceDownSensor implements SensorEventListener {
   private final SensorManager sensorManager_;
-  private final Sensor gravity_;
+  private final Sensor gravity_ = null;
+  private final Sensor acceleration_ = null;
   private boolean facedown_ = false;
 
   /** @brief Constructor.
@@ -42,24 +46,32 @@ public class FaceDownSensor implements SensorEventListener {
     sensorManager_ = manager;
     gravity_ = sensorManager_.getDefaultSensor(Sensor.TYPE_GRAVITY);
     if (gravity_ == null) {
-      throw new Error("Game requires gravity sensor, but no gravity sensor is " +
-		      "present on this hardware.");
+      acceleration_ = sensorManager_.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
     }
   }
 
   public void onPause() {
-    sensorManager_.unregisterListener(this);
+    if (gravity_ != null || acceleration_ != null) {
+      sensorManager_.unregisterListener(this);
+    }
   }
 
   public void onResume() {
-    sensorManager_.registerListener(
-      this, gravity_,
-      SensorManager.SENSOR_DELAY_NORMAL);
+    if (gravity_ != null) {
+      sensorManager_.registerListener(
+	this, gravity_,
+	SensorManager.SENSOR_DELAY_NORMAL);
+    }
+    else if (acceleration_ != null) {
+      sensorManager_.registerListener(
+	this, acceleration_,
+	SensorManager.SENSOR_DELAY_NORMAL);
+    }
   }
 
   @Override
     public void onSensorChanged(SensorEvent event) {
-    facedown_ = event.values[2] < 0.0f;
+      facedown_ = event.values[2] < 0.0f;
   }
 
   @Override
