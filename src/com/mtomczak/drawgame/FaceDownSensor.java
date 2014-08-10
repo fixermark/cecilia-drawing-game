@@ -30,8 +30,8 @@ import java.util.Date;
  */
 public class FaceDownSensor implements SensorEventListener {
   private final SensorManager sensorManager_;
-  private final Sensor gravity_ = null;
-  private final Sensor acceleration_ = null;
+  private Sensor gravity_ = null;
+  private Sensor acceleration_ = null;
   private boolean facedown_ = false;
 
   /** @brief Constructor.

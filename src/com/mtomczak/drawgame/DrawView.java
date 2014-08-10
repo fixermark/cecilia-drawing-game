@@ -69,8 +69,23 @@ public class DrawView extends View
     Color.BLUE,
     Color.rgb(57, 100, 195),  // Indigo
     Color.rgb(102, 51, 153),  // RebeccaPurple ;)
-    Color.BLACK
+    Color.rgb(229, 119, 196),  // Pink
+    Color.BLACK,
+    Color.WHITE
   };
+  private static final float CRAYON_WIDTHS[] = {
+    8.0f,
+    8.0f,
+    8.0f,
+    8.0f,
+    8.0f,
+    8.0f,
+    8.0f,
+    8.0f,
+    8.0f,
+    64.0f
+  };
+  private static final int ERASER_ID = 8;
   private int selected_crayon_ = 0;
 
   private Picture crayon_images_[];
@@ -80,13 +95,19 @@ public class DrawView extends View
   public DrawView(Context context, AttributeSet attrs) {
     super(context, attrs);
     crayon_images_ = new Picture[CRAYON_COLORS.length];
-    for (int i = 0; i < CRAYON_COLORS.length; i++) {
+    int i;
+    for (i = 0; i < CRAYON_COLORS.length - 1; i++) {
       crayon_images_[i] = SVGParser.getSVGFromResource(
 	getResources(),
 	R.raw.crayon,
-	Color.rgb(0,0,0),
+	Color.rgb(0, 0, 0),
 	CRAYON_COLORS[i]).getPicture();
     }
+    crayon_images_[i] = SVGParser.getSVGFromResource(
+      getResources(),
+      R.raw.eraser,
+      Color.rgb(0, 0, 0),
+      Color.rgb(229, 119, 196)).getPicture();  // pink
     crayon_gutter_ = crayon_images_[0].getWidth();
     crayon_height_ = crayon_images_[0].getHeight();
   }
@@ -221,7 +242,7 @@ public class DrawView extends View
 	Paint path_paint = new Paint();
 	path_paint.setColor(CRAYON_COLORS[selected_crayon_]);
 	path_paint.setStyle(Paint.Style.STROKE);
-	path_paint.setStrokeWidth(8.0f);
+	path_paint.setStrokeWidth(CRAYON_WIDTHS[selected_crayon_]);
 	painting_canvas_.drawPath(active_path_, path_paint);
 	invalidate();
       }
