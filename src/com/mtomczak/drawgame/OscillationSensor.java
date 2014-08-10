@@ -44,7 +44,7 @@ import java.util.Date;
 public class OscillationSensor implements SensorEventListener {
   private float oscillationThreshold_ = 0.0f;
   private final SensorManager sensorManager_;
-  private final Sensor accelerometer_ = null;
+  private Sensor accelerometer_ = null;
   private final int axisOfInterest_;
 
   /** Either 1, -1, or 0. */
