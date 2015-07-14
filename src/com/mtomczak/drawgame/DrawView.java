@@ -41,6 +41,7 @@ import java.lang.StringBuilder;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.Formatter;
+import java.util.HashMap;
 import java.util.Random;
 import java.util.Vector;
 
@@ -49,7 +50,6 @@ public class DrawView extends View
 
   private Canvas painting_canvas_;
   private Bitmap painting_bitmap_;
-  private Path active_path_;
   private RandomSound squeakSounds_ = null;
   private RandomSound shakeSounds_ = null;
   private OscillationSensor oscillatorX_ = null;
@@ -92,6 +92,9 @@ public class DrawView extends View
   private float crayon_gutter_ = 0;
   private float crayon_height_ = 0;
 
+  private MultiTouchTracker touchTracker_;
+  private HashMap<Integer, Path> drawPaths_;
+
   public DrawView(Context context, AttributeSet attrs) {
     super(context, attrs);
     crayon_images_ = new Picture[CRAYON_COLORS.length];
@@ -110,6 +113,57 @@ public class DrawView extends View
       Color.rgb(229, 119, 196)).getPicture();  // pink
     crayon_gutter_ = crayon_images_[0].getWidth();
     crayon_height_ = crayon_images_[0].getHeight();
+
+    drawPaths_ = new HashMap<Integer, Path>();
+    touchTracker_ = new MultiTouchTracker() {
+	@Override
+	public void onInteractionStart() {
+	  if (squeakSounds_ != null) {
+	    squeakSounds_.play();
+	  }
+	}
+
+	@Override
+	public void onInteractionStop() {
+	  if (squeakSounds_ != null) {
+	    squeakSounds_.pause();
+	  }
+	}
+
+	@Override
+	public void onTouchStart(int id, MotionEvent.PointerCoords event) {
+	  Path p = new Path();
+	  p.moveTo(Math.max(event.x, crayon_gutter_), event.y);
+	  drawPaths_.put(id, p);
+	}
+
+	public void onTouchStop(int id) {
+	  drawPaths_.remove(id);
+	}
+
+	@Override
+	public void onDrag(
+	  int pointerId,
+	  MotionEvent.PointerCoords currentEvent,
+	  MotionEvent.PointerCoords prevEvent) {
+	  if (currentEvent.x <= crayon_gutter_) {
+	    selectNewCrayon(currentEvent.y);
+	  }
+	  else {
+	    if (drawPaths_.containsKey(pointerId)) {
+	      Paint paint = new Paint();
+	      paint.setColor(CRAYON_COLORS[selected_crayon_]);
+	      paint.setStyle(Paint.Style.STROKE);
+	      paint.setStrokeWidth(CRAYON_WIDTHS[selected_crayon_]);
+
+	      Path p = drawPaths_.get(pointerId);
+	      p.lineTo(Math.max(currentEvent.x, crayon_gutter_), currentEvent.y);
+	      painting_canvas_.drawPath(p, paint);
+	      invalidate();
+	    }
+	  }
+	}
+      };
   }
 
   public void setSqueakSounds(RandomSound sound_source) {
@@ -210,45 +264,7 @@ public class DrawView extends View
 
   @Override
   public boolean onTouchEvent(MotionEvent event) {
-    // We handle multiple touch pointers here, because it turns out
-    // that it's asking a lot of tiny hands to keep their other
-    // fingers, palm, etc. off the screen and only touch with one
-    // fingertip at a time. :)
-    // TODO(mtomczak): Definitely going to want this back, so will
-    // need to learn multi-touch API to track multiple pointers.
-    //for (int i=0; i < event.getPointerCount(); i++) {
-    //}
-    switch(event.getAction()) {
-    case MotionEvent.ACTION_UP:
-      active_path_ = null;
-      if (squeakSounds_ != null) {
-	squeakSounds_.pause();
-      }
-      break;
-    case MotionEvent.ACTION_DOWN:
-      if (event.getX() <= crayon_gutter_) {
-	selectNewCrayon(event.getY());
-      } else {
-	active_path_ = new Path();
-	active_path_.moveTo(Math.max(event.getX(), crayon_gutter_), event.getY());
-	if (squeakSounds_ != null) {
-	  squeakSounds_.play();
-	}
-      }
-      break;
-    case MotionEvent.ACTION_MOVE:
-      if (active_path_ != null) {
-	active_path_.lineTo(Math.max(event.getX(), crayon_gutter_), event.getY());
-	Paint path_paint = new Paint();
-	path_paint.setColor(CRAYON_COLORS[selected_crayon_]);
-	path_paint.setStyle(Paint.Style.STROKE);
-	path_paint.setStrokeWidth(CRAYON_WIDTHS[selected_crayon_]);
-	painting_canvas_.drawPath(active_path_, path_paint);
-	invalidate();
-      }
-    }
-
-    return true;
+    return touchTracker_.onTouchEvent(event);
   }
 
   /** @brief Selects a new crayon
